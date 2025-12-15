@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RentinDR — Rent Apartments & Villas in the Dominican Republic</title>
+    <meta
+      name="description"
+      content="Find and rent verified apartments, villas, and vacation homes across the Dominican Republic. Browse listings, view details, and contact owners directly on RentinDR."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href="https://rentindr.com/" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RentinDR" />
+    <meta property="og:title" content="RentinDR — Rent Apartments & Villas in the Dominican Republic" />
+    <meta property="og:description" content="Discover rentals across the Dominican Republic with detailed photos, amenities, and direct owner contact." />
+    <meta property="og:url" content="https://rentindr.com/" />
+    <meta property="og:image" content="https://rentindr.com/favicon.svg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RentinDR — Rent Apartments & Villas in the Dominican Republic" />
+    <meta name="twitter:description" content="Browse verified property listings and contact owners directly on RentinDR." />
+    <meta name="twitter:image" content="https://rentindr.com/favicon.svg" />
+
+    <!-- JSON-LD Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "RentinDR",
+        "url": "https://rentindr.com/",
+        "logo": "https://rentindr.com/favicon.svg"
+      }
+    </script>
+
+    <script type="module">
+      if (import.meta.hot?.on) {
+        import.meta.hot.on('vite:error', (error) => {
+          if (error.err) {
+            console.error(
+              [error.err.message, error.err.frame].filter(Boolean).join('\n'),
+            )
+          }
+        })
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
