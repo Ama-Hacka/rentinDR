@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, Save, Eye, Home, DollarSign, Ruler, Bed, PawPrint, Check, MapPin } from 'lucide-react'
+import { ArrowLeft, Upload, Save, Eye, Home, DollarSign, Ruler, Bed, PawPrint, Check, MapPin, Link as LinkIcon } from 'lucide-react'
 import { ImageUpload } from '@/components/ImageUpload'
 import { usePropertyStore } from '@/stores/propertyStore'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { Helmet } from 'react-helmet-async'
+import { fetchOG } from '@/lib/og'
 
 const AMENITIES = [
   'Gym', 'Pool', 'Parking', 'Balcony', 'Air Conditioning', 
@@ -33,10 +34,12 @@ export const OwnerUpload: React.FC = () => {
     pets_allowed: false,
     negotiable: false,
     negotiable_items: [] as string[],
-    amenities: [] as string[]
+    amenities: [] as string[],
+    source_url: ''
   })
   
   const [images, setImages] = useState<File[]>([])
+  const [importedImageUrls, setImportedImageUrls] = useState<string[]>([])
   const [showPreview, setShowPreview] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -45,23 +48,65 @@ export const OwnerUpload: React.FC = () => {
   const [contactPhone, setContactPhone] = useState('')
 
   useEffect(() => {
-    const role = (user as any)?.user_metadata?.role
-    if (!user || role !== 'owner') {
-      alert('Only property owners can upload listings')
-      navigate('/')
+    const verifyAndLoad = async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser()
+        const currentUser = auth?.user
+        if (!currentUser) {
+          alert('Only property owners can upload listings')
+          navigate('/')
+          return
+        }
+        const metaRole = (currentUser as any)?.user_metadata?.role
+        if (metaRole !== 'owner') {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('account_type, phone')
+            .eq('id', currentUser.id)
+            .single()
+          const acctRole = (profile as any)?.account_type
+          if (acctRole !== 'owner') {
+            alert('Only property owners can upload listings')
+            navigate('/')
+            return
+          }
+          setAccountPhone((profile as any)?.phone || null)
+        } else {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('phone')
+            .eq('id', currentUser.id)
+            .single()
+          setAccountPhone((profile as any)?.phone || null)
+        }
+      } catch {
+        alert('Only property owners can upload listings')
+        navigate('/')
+      }
     }
-    const fetchPhone = async () => {
-      if (!user) return
-      const { data } = await supabase
-        .from('users')
-        .select('account_type, email, account_type, phone')
-        .eq('id', user.id)
-        .single()
-      const phone = (data as any)?.phone || null
-      setAccountPhone(phone)
+    verifyAndLoad()
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const encoded = params.get('import')
+    if (encoded) {
+      try {
+        const json = atob(encoded)
+        const data = JSON.parse(json)
+        if (data.title) setFormData((f) => ({ ...f, title: data.title }))
+        if (data.description) setFormData((f) => ({ ...f, description: data.description }))
+        if (typeof data.price === 'number' && data.price > 0) setFormData((f) => ({ ...f, price: String(data.price) }))
+        if (typeof data.rooms === 'number' && data.rooms > 0) setFormData((f) => ({ ...f, rooms: String(data.rooms) }))
+        if (typeof data.squareMeters === 'number' && data.squareMeters > 0) setFormData((f) => ({ ...f, square_meters: String(data.squareMeters) }))
+        if (Array.isArray(data.images) && data.images.length > 0) {
+          setImportedImageUrls(data.images.slice(0, 10))
+        }
+        if (data.source_url) setFormData((f) => ({ ...f, source_url: data.source_url }))
+        alert('Imported data from browser extension')
+      } catch {}
     }
-    fetchPhone()
-  }, [user])
+  }, [])
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -98,6 +143,7 @@ export const OwnerUpload: React.FC = () => {
     if (!formData.square_meters || Number(formData.square_meters) <= 0) newErrors.square_meters = 'Square meters is required'
     if (images.length === 0) newErrors.images = 'At least one image is required'
     if (!useAccountPhone && !contactPhone.trim()) newErrors.contact_phone = 'Contact phone is required or select account phone'
+    if (formData.source_url && !/^https?:\/\//i.test(formData.source_url.trim())) newErrors.source_url = 'Source URL must start with http:// or https://'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -119,10 +165,17 @@ export const OwnerUpload: React.FC = () => {
       }
 
       const uploadedImages: { image_url: string; order_index: number }[] = []
+      // Prepend imported external images
+      if (importedImageUrls.length > 0) {
+        importedImageUrls.forEach((img, idx) => {
+          uploadedImages.push({ image_url: img, order_index: idx })
+        })
+      }
       if (images.length > 0) {
         for (let i = 0; i < images.length; i++) {
           const file = images[i]
-          const path = `${user.id}/${Date.now()}_${i}_${file.name}`
+          const safeName = file.name.replace(/[^\w.\-]+/g, '_')
+          const path = `${user.id}/${Date.now()}_${i}_${safeName}`
           const { data: uploadData, error: uploadError } = await supabase
             .storage
             .from('property-images')
@@ -137,7 +190,7 @@ export const OwnerUpload: React.FC = () => {
             .getPublicUrl(uploadData.path)
           uploadedImages.push({
             image_url: publicData.publicUrl,
-            order_index: i
+            order_index: importedImageUrls.length + i
           })
         }
       }
@@ -154,6 +207,7 @@ export const OwnerUpload: React.FC = () => {
         negotiable_items: formData.negotiable_items,
         amenities: formData.amenities,
         images: uploadedImages,
+        source_url: formData.source_url || undefined,
         contact_phone: useAccountPhone ? accountPhone || undefined : contactPhone
       } as any)
       
@@ -432,6 +486,60 @@ export const OwnerUpload: React.FC = () => {
                   placeholder="120"
                 />
                 {errors.square_meters && <p className="text-red-600 text-sm mt-1">{errors.square_meters}</p>}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Source URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.source_url}
+                  onChange={(e) => handleInputChange('source_url', e.target.value)}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    errors.source_url ? "border-red-500" : "border-gray-300"
+                  )}
+                  placeholder="https://example.com/original-listing"
+                />
+                {errors.source_url && <p className="text-red-600 text-sm mt-1">{errors.source_url}</p>}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const url = formData.source_url.trim()
+                      if (!url) return
+                      try {
+                        const og = await fetchOG(url)
+                        let imported = false
+                        if (og.title) {
+                          handleInputChange('title', og.title)
+                          imported = true
+                        }
+                        if (og.description) {
+                          handleInputChange('description', og.description)
+                          imported = true
+                        }
+                        if (og.images && og.images.length > 0) {
+                          setImportedImageUrls(og.images.slice(0, 10))
+                          imported = true
+                        }
+                        alert(imported ? 'Imported metadata from source URL' : 'No metadata available from this URL')
+                      } catch {
+                        alert('Failed to import from source URL')
+                      }
+                    }}
+                    className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded transition-colors text-sm"
+                  >
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    Import from URL
+                  </button>
+                  {importedImageUrls.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Imported {importedImageUrls.length} image{importedImageUrls.length > 1 ? 's' : ''} from source
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>

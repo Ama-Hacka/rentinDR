@@ -43,7 +43,7 @@ export const PropertyListings: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    handleFiltersChange({ ...filters, location: e.target.value })
+    handleFiltersChange({ ...filters, search_query: e.target.value })
   }
 
   const handlePropertyClick = (propertyId: string) => {
@@ -78,7 +78,7 @@ export const PropertyListings: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by location, neighborhood, or keywords..."
+                placeholder="Search by title, description, location, rooms, m², or features..."
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

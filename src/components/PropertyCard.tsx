@@ -22,6 +22,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
         "bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer",
         "border border-gray-200 overflow-hidden group"
       )}
+      style={{ maxWidth: 420 }}
     >
       {/* Property Image */}
       <div className="relative h-48 bg-gray-200 overflow-hidden">
@@ -61,7 +62,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
       </div>
 
       {/* Property Details */}
-      <div className="p-6">
+      <div className="p-6 flex flex-col" style={{ minHeight: 260 }}>
         <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
           {property.title}
         </h3>
@@ -69,6 +70,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
         <div className="flex items-center text-gray-600 mb-3">
           <MapPin className="w-4 h-4 mr-1" />
           <span className="text-sm">{property.location}</span>
+          {property.source_url ? (
+            <a
+              href={property.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="ml-2 text-xs text-blue-600 hover:text-blue-700 underline"
+            >
+              Source
+            </a>
+          ) : (
+            <span className="ml-2 text-xs text-gray-400">Source</span>
+          )}
         </div>
 
         <div className="flex items-center gap-4 mb-4 text-gray-600">
@@ -88,7 +102,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
           )}
         </div>
 
-        <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+        <p className="text-gray-600 text-sm line-clamp-2 mb-4" style={{ minHeight: 40 }}>
           {property.description}
         </p>
 
@@ -108,7 +122,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick })
           )}
         </div>
 
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 font-medium">
+        <button className="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 font-medium">
           View Details
         </button>
       </div>

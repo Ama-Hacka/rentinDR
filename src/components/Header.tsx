@@ -70,11 +70,6 @@ export const Header: React.FC = () => {
 
             {/* Navigation */}
             <nav className="flex items-center space-x-4">
-              {import.meta.env.DEV && supabaseUrl && (
-                <span className="hidden md:inline text-xs text-gray-400 mr-2">
-                  Supabase: {new URL(supabaseUrl).host}
-                </span>
-              )}
               <button
                 onClick={handleListProperty}
                 className={cn(

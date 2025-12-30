@@ -43,6 +43,10 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
         .select('*, property_images(image_url, order_index)')
         .eq('status', 'active')
 
+      if (filters.search_query && filters.search_query.trim().length > 0) {
+        const s = filters.search_query.trim()
+        query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%,location.ilike.%${s}%`)
+      }
       if (filters.price_min) {
         query = query.gte('price', filters.price_min)
       }
@@ -61,9 +65,6 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       if (filters.pets_allowed !== undefined) {
         query = query.eq('pets_allowed', filters.pets_allowed)
       }
-      if (filters.location) {
-        query = query.ilike('location', `%${filters.location}%`)
-      }
 
       const { data, error } = await query.order('order_index', { foreignTable: 'property_images', ascending: true })
       if (error) throw error
@@ -71,7 +72,20 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
         const first = p.property_images?.[0]?.image_url
         return { ...p, thumbnail_url: first }
       })
-      const final = filters.favorites_only ? properties.filter((p: any) => get().favorites.includes(p.id)) : properties
+      let final = filters.favorites_only ? properties.filter((p: any) => get().favorites.includes(p.id)) : properties
+      if (filters.search_query && filters.search_query.trim().length > 0) {
+        const q = filters.search_query.trim().toLowerCase()
+        final = final.filter((p: any) => {
+          const hay = [
+            p.title || '',
+            p.description || '',
+            p.location || '',
+            Array.isArray(p.negotiable_items) ? p.negotiable_items.join(' ') : ''
+          ].join(' ').toLowerCase()
+          const numMatch = q === String(p.rooms) || q === String(p.square_meters) || q === String(Math.round(Number(p.price || 0)))
+          return hay.includes(q) || numMatch
+        })
+      }
       set({ properties: final, loading: false })
     } catch (error) {
       set({ error: (error as Error).message, loading: false })
@@ -136,7 +150,16 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
       const role = (user as any).user_metadata?.role
-      if (role !== 'owner') throw new Error('Only property owners can create listings')
+      if (role !== 'owner') {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('account_type')
+          .eq('id', user.id)
+          .single()
+        if ((profile as any)?.account_type !== 'owner') {
+          throw new Error('Only property owners can create listings')
+        }
+      }
 
       const baseInsert = {
         title: property.title || '',
@@ -147,6 +170,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
         square_meters: property.square_meters || 0,
         pets_allowed: property.pets_allowed || false,
         negotiable_items: property.negotiable_items || [],
+        source_url: (property as any).source_url || null,
         contact_phone: (property as any).contact_phone || null,
         owner_id: user.id,
         status: 'active'
@@ -233,6 +257,7 @@ export const usePropertyStore = create<PropertyStore>((set, get) => ({
         square_meters: updates.square_meters,
         pets_allowed: updates.pets_allowed,
         negotiable_items: updates.negotiable_items,
+        source_url: updates.source_url,
         contact_phone: (updates as any).contact_phone,
         status: updates.status
       }

@@ -16,6 +16,7 @@ export interface Property {
   thumbnail_url?: string
   contact_phone?: string
   contact_email?: string
+  source_url?: string
 }
 
 export interface PropertyImage {
@@ -48,4 +49,5 @@ export interface PropertyFilters {
   amenities?: string[]
   location?: string
   favorites_only?: boolean
+  search_query?: string
 }

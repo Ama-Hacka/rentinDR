@@ -160,6 +160,16 @@ export const PropertyDetails: React.FC = () => {
               <div className="flex items-center text-gray-600 mb-6">
                 <MapPin className="w-5 h-5 mr-2" />
                 <span className="text-lg">{property.location}</span>
+                {property.source_url ? (
+                  <a
+                    href={property.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-3 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Source
+                  </a>
+                ) : null}
               </div>
 
               {/* Key Details */}

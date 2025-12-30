@@ -9,6 +9,7 @@ CREATE TABLE public.properties (
   square_meters INTEGER NOT NULL CHECK (square_meters > 0),
   pets_allowed BOOLEAN DEFAULT FALSE,
   negotiable_items TEXT[],
+  source_url TEXT,
   status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','inactive','rented')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

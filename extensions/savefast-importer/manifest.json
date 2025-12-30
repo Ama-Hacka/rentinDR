@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "SaveFast Importer",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Import to SaveFast"
+  },
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
